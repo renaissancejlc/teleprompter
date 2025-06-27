@@ -51,7 +51,7 @@ function Info() {
     I'm a software engineer who loves building fun, useful, and open tools like this one. I freelance, create side projects, and enthusiastically welcome input, feedback, and feature suggestions.
   </p>
   <p className="text-lg">
-    FreePrompt exists because we believe helpful tools should be accessible to everyone—no paywalls, no hassle, just free and functional.
+    FreePrompt exists because we believe helpful tools should be accessible to everyone. No paywalls, no hassle, just free and functional.
   </p>
   <h2 className="text-2xl font-bold uppercase tracking-wide mt-6">Support This Project</h2>
   <p className="text-lg">
