@@ -1,0 +1,169 @@
+import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { Globe, Linkedin, Github, Info, Instagram } from 'lucide-react';
+
+function Home() {
+  const [content, setContent] = useState('');
+  const [isMarkdown, setIsMarkdown] = useState(false);
+  const [speed, setSpeed] = useState(2);
+  const [isRunning, setIsRunning] = useState(false);
+  const [displayDarkMode, setDisplayDarkMode] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const displayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isRunning) {
+      const interval = setInterval(() => {
+        if (displayRef.current) {
+          displayRef.current.scrollTop += speed;
+        }
+      }, 50);
+      return () => clearInterval(interval);
+    }
+  }, [isRunning, speed]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullScreen = () => {
+    if (displayRef.current) {
+      if (!document.fullscreenElement) {
+        displayRef.current.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+  };
+
+  return (
+    <div className="min-h-screen px-8 py-10 space-y-10 font-sans tracking-wide text-black bg-gradient-to-br from-gray-200 via-gray-300 to-gray-100 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')]">
+<header className="border-y-4 border-black py-4 px-2 mb-8 bg-white">
+  <h1 className="text-5xl font-extrabold tracking-tight uppercase leading-none">
+    FreePrompt
+  </h1>
+  <p className="text-xs font-mono uppercase tracking-widest mt-2 text-gray-800">
+    Finally, a free web teleprompter that doesn’t suck.
+  </p>
+</header>
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="Type your script here..."
+        className="w-full h-40 p-4 rounded-lg border border-gray-500 bg-white text-black placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <div className="mt-2 flex space-x-2">
+        <button
+          onClick={() => setIsMarkdown(false)}
+          className={`uppercase text-xs tracking-wide border border-black px-3 py-2 transition ${
+            !isMarkdown ? 'bg-black text-white' : 'bg-white/30 backdrop-blur-md hover:bg-black hover:text-white'
+          }`}
+        >
+          Raw Text
+        </button>
+        <button
+          onClick={() => setIsMarkdown(true)}
+          className={`uppercase text-xs tracking-wide border border-black px-3 py-2 transition ${
+            isMarkdown ? 'bg-black text-white' : 'bg-white/30 backdrop-blur-md hover:bg-black hover:text-white'
+          }`}
+        >
+          Markdown
+        </button>
+      </div>
+      <hr className="border-t-2 border-black my-6" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mt-6">
+        <div className="flex flex-col space-y-1 col-span-2">
+          <label className="uppercase text-xs tracking-wide font-bold">Speed: {speed}</label>
+          <input
+            type="range"
+            min="1"
+            max="10"
+            value={speed}
+            onChange={(e) => setSpeed(Number(e.target.value))}
+            className="w-full bg-white/30 backdrop-blur-md border border-black cursor-pointer"
+          />
+        </div>
+        <button onClick={() => setIsRunning(true)} className="uppercase text-xs tracking-wide border border-black bg-white/30 backdrop-blur-md shadow-sm px-3 py-2 hover:bg-black hover:text-white transition">
+          Start
+        </button>
+        <button onClick={() => setIsRunning(false)} className="uppercase text-xs tracking-wide border border-black bg-white/30 backdrop-blur-md shadow-sm px-3 py-2 hover:bg-black hover:text-white transition">
+          Pause
+        </button>
+        <button onClick={() => (displayRef.current!.scrollTop = 0)} className="uppercase text-xs tracking-wide border border-black bg-white/30 backdrop-blur-md shadow-sm px-3 py-2 hover:bg-black hover:text-white transition">
+          Reset
+        </button>
+        <button onClick={toggleFullScreen} className="uppercase text-xs tracking-wide border border-black bg-white/30 backdrop-blur-md shadow-sm px-3 py-2 hover:bg-black hover:text-white transition">
+          Fullscreen
+        </button>
+        <button
+          onClick={() => setDisplayDarkMode(!displayDarkMode)}
+          className="uppercase text-xs tracking-wide border border-black bg-white/30 backdrop-blur-md shadow-sm px-3 py-2 hover:bg-black hover:text-white transition"
+        >
+          {displayDarkMode ? 'Dark Mode' : 'Light Mode'}
+        </button>
+      </div>
+      <hr className="border-t-2 border-black my-6" />
+      <div
+        ref={displayRef}
+        className={`relative h-96 overflow-y-scroll border p-4 text-2xl leading-loose ${displayDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}
+      >
+        {isFullscreen && (
+          <div className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md border-b border-black flex flex-wrap items-center justify-center space-x-2 py-2 px-3 z-50">
+            <button onClick={() => setIsRunning(true)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Start</button>
+            <button onClick={() => setIsRunning(false)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Pause</button>
+            <button onClick={() => (displayRef.current!.scrollTop = 0)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Reset</button>
+            <label className="text-xs uppercase tracking-wide font-bold ml-2">Speed:</label>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={speed}
+              onChange={(e) => setSpeed(Number(e.target.value))}
+              className="w-24 bg-white/30 backdrop-blur-md border border-black cursor-pointer"
+            />
+            <button
+              onClick={() => setDisplayDarkMode(!displayDarkMode)}
+              className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition"
+            >
+              {displayDarkMode ? 'Dark Mode' : 'Light Mode'}
+            </button>
+          </div>
+        )}
+        {isMarkdown ? <ReactMarkdown>{content}</ReactMarkdown> : <pre>{content}</pre>}
+      </div>
+      <footer className="border-t-4 border-black pt-6 mt-12 text-center uppercase tracking-wider text-sm">
+  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 justify-items-center">
+    <a href="https://renaissancecarr.com" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 hover:underline hover:text-blue-700 transition">
+      <Globe size={16} />
+      <span>Website</span>
+    </a>
+    <a href="https://www.linkedin.com/in/renaissancejlc" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 hover:underline hover:text-blue-700 transition">
+      <Linkedin size={16} />
+      <span>LinkedIn</span>
+    </a>
+    <a href="https://github.com/renaissancejlc" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 hover:underline hover:text-blue-700 transition">
+      <Github size={16} />
+      <span>GitHub</span>
+    </a>
+    <a href="/info" className="flex items-center space-x-2 hover:underline hover:text-blue-700 transition">
+      <Info size={16} />
+      <span>Info</span>
+    </a>
+    <a href="https://instagram.com/renaissancejlc" target="_blank" rel="noopener noreferrer" className="flex items-center space-x-2 hover:underline hover:text-blue-700 transition">
+      <Instagram size={16} />
+      <span>Instagram</span>
+    </a>
+  </div>
+</footer>
+    </div>
+  );
+}
+
+export default Home; 
