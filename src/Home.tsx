@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Globe, Linkedin, Github, Info, Instagram, Undo } from 'lucide-react';
+import { Globe, Linkedin, Github, Info, Instagram, ArrowLeft, Undo } from 'lucide-react';
 
 function Home() {
   const [content, setContent] = useState('');
@@ -117,32 +117,39 @@ function Home() {
         } border p-4 text-2xl leading-loose ${displayDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}
       >
         {isFullscreen && (
-          <div className={`fixed top-0 left-0 right-0 ${displayDarkMode ? 'bg-black/90 text-white' : 'bg-white/90 text-black'} backdrop-blur-md border-b border-black flex flex-wrap items-center justify-center space-x-2 py-2 px-3 z-50`}>
-            <button
-              onClick={() => setIsFullscreen(false)}
-              className="flex items-center space-x-1 text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition"
-            >
-              <Undo size={16} />
-              <span>Exit Fullscreen</span>
-            </button>
-            <button onClick={() => setIsRunning(true)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Start</button>
-            <button onClick={() => setIsRunning(false)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Pause</button>
-            <button onClick={() => (displayRef.current!.scrollTop = 0)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Reset</button>
-            <label className="text-xs uppercase tracking-wide font-bold ml-2">Speed:</label>
-            <input
-              type="range"
-              min="1"
-              max="10"
-              value={speed}
-              onChange={(e) => setSpeed(Number(e.target.value))}
-              className="w-24 bg-white/30 backdrop-blur-md border border-black cursor-pointer"
-            />
-            <button
-              onClick={() => setDisplayDarkMode(!displayDarkMode)}
-              className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition"
-            >
-              {displayDarkMode ? 'Dark Mode' : 'Light Mode'}
-            </button>
+          <div className={`fixed top-0 left-0 right-0 ${displayDarkMode ? 'bg-black/90 text-white' : 'bg-white/90 text-black'} backdrop-blur-md border-b border-black flex items-center justify-between py-2 px-3 z-50`}>
+            {/* Left Side: Exit Button */}
+            <div>
+              <button
+                onClick={() => setIsFullscreen(false)}
+                className="flex items-center space-x-1 text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition"
+              >
+                <Undo size={16} />
+                <span>Exit Fullscreen</span>
+              </button>
+            </div>
+
+            {/* Right Side: Other Controls */}
+            <div className="flex flex-wrap items-center space-x-2">
+              <button onClick={() => setIsRunning(true)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Start</button>
+              <button onClick={() => setIsRunning(false)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Pause</button>
+              <button onClick={() => (displayRef.current!.scrollTop = 0)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Reset</button>
+              <label className="text-xs uppercase tracking-wide font-bold ml-2">Speed:</label>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                value={speed}
+                onChange={(e) => setSpeed(Number(e.target.value))}
+                className="w-24 bg-white/30 backdrop-blur-md border border-black cursor-pointer"
+              />
+              <button
+                onClick={() => setDisplayDarkMode(!displayDarkMode)}
+                className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition"
+              >
+                {displayDarkMode ? 'Dark Mode' : 'Light Mode'}
+              </button>
+            </div>
           </div>
         )}
         <div className="pt-64 pb-64">
