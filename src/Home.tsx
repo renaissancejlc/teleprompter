@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Globe, Linkedin, Github, Info, Instagram } from 'lucide-react';
+import { Globe, Linkedin, Github, Info, Instagram, Undo } from 'lucide-react';
 
 function Home() {
   const [content, setContent] = useState('');
@@ -12,14 +12,20 @@ function Home() {
   const displayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let animationFrameId: number;
+
+    const scrollStep = () => {
+      if (displayRef.current && isRunning) {
+        displayRef.current.scrollTop += speed * 0.5; // Adjust multiplier for smoother scroll speed
+        animationFrameId = requestAnimationFrame(scrollStep);
+      }
+    };
+
     if (isRunning) {
-      const interval = setInterval(() => {
-        if (displayRef.current) {
-          displayRef.current.scrollTop += speed;
-        }
-      }, 50);
-      return () => clearInterval(interval);
+      animationFrameId = requestAnimationFrame(scrollStep);
     }
+
+    return () => cancelAnimationFrame(animationFrameId);
   }, [isRunning, speed]);
 
   useEffect(() => {
@@ -34,13 +40,7 @@ function Home() {
   }, []);
 
   const toggleFullScreen = () => {
-    if (displayRef.current) {
-      if (!document.fullscreenElement) {
-        displayRef.current.requestFullscreen();
-      } else {
-        document.exitFullscreen();
-      }
-    }
+    setIsFullscreen(!isFullscreen);
   };
 
   return (
@@ -112,10 +112,19 @@ function Home() {
       <hr className="border-t-2 border-black my-6" />
       <div
         ref={displayRef}
-        className={`relative h-96 overflow-y-scroll border p-4 text-2xl leading-loose ${displayDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}
+        className={`${
+          isFullscreen ? 'fixed top-0 left-0 w-full h-full z-50 overflow-y-scroll pt-16' : 'relative h-96 overflow-y-scroll'
+        } border p-4 text-2xl leading-loose ${displayDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}
       >
         {isFullscreen && (
-          <div className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md border-b border-black flex flex-wrap items-center justify-center space-x-2 py-2 px-3 z-50">
+          <div className={`fixed top-0 left-0 right-0 ${displayDarkMode ? 'bg-black/90 text-white' : 'bg-white/90 text-black'} backdrop-blur-md border-b border-black flex flex-wrap items-center justify-center space-x-2 py-2 px-3 z-50`}>
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="flex items-center space-x-1 text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition"
+            >
+              <Undo size={16} />
+              <span>Exit Fullscreen</span>
+            </button>
             <button onClick={() => setIsRunning(true)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Start</button>
             <button onClick={() => setIsRunning(false)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Pause</button>
             <button onClick={() => (displayRef.current!.scrollTop = 0)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Reset</button>
@@ -136,7 +145,9 @@ function Home() {
             </button>
           </div>
         )}
-        {isMarkdown ? <ReactMarkdown>{content}</ReactMarkdown> : <pre>{content}</pre>}
+        <div className="pt-64 pb-64">
+          {isMarkdown ? <ReactMarkdown>{content}</ReactMarkdown> : <pre>{content}</pre>}
+        </div>
       </div>
       <footer className="border-t-4 border-black pt-6 mt-12 text-center uppercase tracking-wider text-sm">
   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 justify-items-center">
