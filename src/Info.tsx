@@ -41,7 +41,7 @@ function Info() {
     </Link>
   </h1>
   <p className="text-xs font-mono uppercase tracking-widest mt-2 text-gray-800">
-    Finally, a free web teleprompter that doesn’t suck.
+    Finally, a free, simple web teleprompter.
   </p>
 </header>
 
