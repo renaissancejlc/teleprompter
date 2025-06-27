@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Globe, Linkedin, Github, Info, Instagram, ArrowLeft, Undo } from 'lucide-react';
+import remarkGfm from 'remark-gfm';
 
 function Home() {
   const [content, setContent] = useState('');
@@ -50,7 +51,7 @@ function Home() {
     FreePrompt
   </h1>
   <p className="text-xs font-mono uppercase tracking-widest mt-2 text-gray-800">
-    Finally, a free web teleprompter that doesn’t suck.
+    Finally, a free, simple web teleprompter.
   </p>
 </header>
       <textarea
@@ -153,7 +154,7 @@ function Home() {
           </div>
         )}
         <div className="pt-64 pb-64">
-          {isMarkdown ? <ReactMarkdown>{content}</ReactMarkdown> : <pre>{content}</pre>}
+          {isMarkdown ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown> : <pre>{content}</pre>}
         </div>
       </div>
       <footer className="border-t-4 border-black pt-6 mt-12 text-center uppercase tracking-wider text-sm">
