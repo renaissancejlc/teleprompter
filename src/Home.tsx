@@ -7,6 +7,7 @@ function Home() {
   const [content, setContent] = useState('');
   const [isMarkdown, setIsMarkdown] = useState(false);
   const [speed, setSpeed] = useState(2);
+  const [fontSize, setFontSize] = useState(2); // Default size in rem
   const [isRunning, setIsRunning] = useState(false);
   const [displayDarkMode, setDisplayDarkMode] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -80,16 +81,30 @@ function Home() {
       </div>
       <hr className="border-t-2 border-black my-6" />
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mt-6">
-        <div className="flex flex-col space-y-1 col-span-2">
-          <label className="uppercase text-xs tracking-wide font-bold">Speed: {speed}</label>
-          <input
-            type="range"
-            min="1"
-            max="10"
-            value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            className="w-full bg-white/30 backdrop-blur-md border border-black cursor-pointer"
-          />
+        <div className="col-span-full grid grid-cols-1 gap-3">
+          <div className="flex flex-col space-y-1">
+            <label className="uppercase text-xs tracking-wide font-bold">Speed: {speed}</label>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={speed}
+              onChange={(e) => setSpeed(Number(e.target.value))}
+              className="w-full bg-white/30 backdrop-blur-md border border-black cursor-pointer"
+            />
+          </div>
+          <div className="flex flex-col space-y-1">
+            <label className="uppercase text-xs tracking-wide font-bold">Font Size: {fontSize}rem</label>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              step="0.5"
+              value={fontSize}
+              onChange={(e) => setFontSize(Number(e.target.value))}
+              className="w-full bg-white/30 backdrop-blur-md border border-black cursor-pointer"
+            />
+          </div>
         </div>
         <button onClick={() => setIsRunning(true)} className="uppercase text-xs tracking-wide border border-black bg-white/30 backdrop-blur-md shadow-sm px-3 py-2 hover:bg-black hover:text-white transition">
           Start
@@ -113,9 +128,10 @@ function Home() {
       <hr className="border-t-2 border-black my-6" />
       <div
         ref={displayRef}
+        style={{ fontSize: `${fontSize}rem` }}
         className={`${
           isFullscreen ? 'fixed top-0 left-0 w-full h-full z-50 overflow-y-scroll pt-16' : 'relative h-96 overflow-y-scroll'
-        } border p-4 text-2xl leading-loose ${displayDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}
+        } border p-4 leading-loose ${displayDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}
       >
         {isFullscreen && (
           <div className={`fixed top-0 left-0 right-0 ${displayDarkMode ? 'bg-black/90 text-white' : 'bg-white/90 text-black'} backdrop-blur-md border-b border-black flex items-center justify-between py-2 px-3 z-50`}>
@@ -135,15 +151,29 @@ function Home() {
               <button onClick={() => setIsRunning(true)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Start</button>
               <button onClick={() => setIsRunning(false)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Pause</button>
               <button onClick={() => (displayRef.current!.scrollTop = 0)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Reset</button>
-              <label className="text-xs uppercase tracking-wide font-bold ml-2">Speed:</label>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                value={speed}
-                onChange={(e) => setSpeed(Number(e.target.value))}
-                className="w-24 bg-white/30 backdrop-blur-md border border-black cursor-pointer"
-              />
+              <div className="flex flex-col space-y-1">
+                <label className="text-xs uppercase tracking-wide font-bold">Speed: {speed}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={speed}
+                  onChange={(e) => setSpeed(Number(e.target.value))}
+                  className="w-24 bg-white/30 backdrop-blur-md border border-black cursor-pointer"
+                />
+              </div>
+              <div className="flex flex-col space-y-1">
+                <label className="text-xs uppercase tracking-wide font-bold">Font Size: {fontSize}rem</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  step="0.5"
+                  value={fontSize}
+                  onChange={(e) => setFontSize(Number(e.target.value))}
+                  className="w-24 bg-white/30 backdrop-blur-md border border-black cursor-pointer"
+                />
+              </div>
               <button
                 onClick={() => setDisplayDarkMode(!displayDarkMode)}
                 className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition"
