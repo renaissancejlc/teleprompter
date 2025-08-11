@@ -14,20 +14,40 @@ function Home() {
   const displayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let animationFrameId: number;
+    let raf = 0;
+    let last = 0;
 
-    const scrollStep = () => {
-      if (displayRef.current && isRunning) {
-        displayRef.current.scrollTop += speed * 0.5; // Adjust multiplier for smoother scroll speed
-        animationFrameId = requestAnimationFrame(scrollStep);
+    const loop = (t: number) => {
+      if (!displayRef.current || !isRunning) return;
+      if (!last) last = t;
+      const dt = (t - last) / 1000; // seconds since last frame
+      last = t;
+
+      // Nonlinear speed curve: 0–10 slider → 0–300 px/sec with extra precision at the low end
+      const maxPxPerSec = 300;
+      const normalized = speed / 10; // 0..1
+      const pxPerSec = maxPxPerSec * normalized * normalized; // quadratic easing
+
+      const el = displayRef.current;
+      const nextScroll = el.scrollTop + pxPerSec * dt;
+      el.scrollTop = nextScroll;
+
+      // Stop at bottom
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
+        // pause when we hit the bottom
+        setIsRunning(false);
+        return;
       }
+
+      raf = requestAnimationFrame(loop);
     };
 
     if (isRunning) {
-      animationFrameId = requestAnimationFrame(scrollStep);
+      last = performance.now();
+      raf = requestAnimationFrame(loop);
     }
 
-    return () => cancelAnimationFrame(animationFrameId);
+    return () => cancelAnimationFrame(raf);
   }, [isRunning, speed]);
 
   useEffect(() => {
@@ -83,13 +103,14 @@ function Home() {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mt-6">
         <div className="col-span-full grid grid-cols-1 gap-3">
           <div className="flex flex-col space-y-1">
-            <label className="uppercase text-xs tracking-wide font-bold">Speed: {speed}</label>
+            <label className="uppercase text-xs tracking-wide font-bold">Speed: {speed.toFixed(1)}</label>
             <input
               type="range"
-              min="1"
+              min="0"
               max="10"
+              step="0.1"
               value={speed}
-              onChange={(e) => setSpeed(Number(e.target.value))}
+              onChange={(e) => setSpeed(parseFloat(e.target.value))}
               className="w-full bg-white/30 backdrop-blur-md border border-black cursor-pointer"
             />
           </div>
@@ -131,7 +152,7 @@ function Home() {
         style={{ fontSize: `${fontSize}rem` }}
         className={`${
           isFullscreen ? 'fixed top-0 left-0 w-full h-full z-50 overflow-y-scroll pt-16' : 'relative h-96 overflow-y-scroll'
-        } border p-4 leading-loose ${displayDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}
+        } border p-4 leading-loose ${displayDarkMode ? 'bg-black text-white' : 'bg-white text-black'} overflow-x-hidden`}
       >
         {isFullscreen && (
           <div className={`fixed top-0 left-0 right-0 ${displayDarkMode ? 'bg-black/90 text-white' : 'bg-white/90 text-black'} backdrop-blur-md border-b border-black flex items-center justify-between py-2 px-3 z-50`}>
@@ -152,13 +173,14 @@ function Home() {
               <button onClick={() => setIsRunning(false)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Pause</button>
               <button onClick={() => (displayRef.current!.scrollTop = 0)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Reset</button>
               <div className="flex flex-col space-y-1">
-                <label className="text-xs uppercase tracking-wide font-bold">Speed: {speed}</label>
+                <label className="text-xs uppercase tracking-wide font-bold">Speed: {speed.toFixed(1)}</label>
                 <input
                   type="range"
-                  min="1"
+                  min="0"
                   max="10"
+                  step="0.1"
                   value={speed}
-                  onChange={(e) => setSpeed(Number(e.target.value))}
+                  onChange={(e) => setSpeed(parseFloat(e.target.value))}
                   className="w-24 bg-white/30 backdrop-blur-md border border-black cursor-pointer"
                 />
               </div>
@@ -183,8 +205,12 @@ function Home() {
             </div>
           </div>
         )}
-        <div className="pt-64 pb-64">
-          {isMarkdown ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown> : <pre>{content}</pre>}
+        <div className="pt-64 pb-64 break-words">
+          {isMarkdown ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+          ) : (
+            <pre className="whitespace-pre-wrap break-words overflow-x-hidden">{content}</pre>
+          )}
         </div>
       </div>
       <footer className="border-t-4 border-black pt-6 mt-12 text-center uppercase tracking-wider text-sm">
