@@ -1,4 +1,50 @@
 import React, { useState, useRef, useEffect } from 'react';
+// --- helpers: markdown stripping (lightweight) and duration formatting ---
+function stripMarkdown(src: string): string {
+  return src
+    // code blocks
+    .replace(/```[\s\S]*?```/g, ' ')
+    // images ![alt](url)
+    .replace(/!\[[^\]]*\]\([^\)]*\)/g, ' ')
+    // links [text](url)
+    .replace(/\[[^\]]*\]\([^\)]*\)/g, ' $1 ')
+    // headings, blockquotes, lists, emphasis, inline code
+    .replace(/^\s{0,3}#+\s+/gm, '')
+    .replace(/^\s{0,3}>\s?/gm, '')
+    .replace(/^\s{0,3}[-*+]\s+/gm, '')
+    .replace(/[*_`~]/g, '')
+    // tables pipes
+    .replace(/\|/g, ' ')
+    // collapse whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function formatDuration(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}h ${m}m ${sec}s`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
+}
+
+// --- scrolling speed model (shared by loop & estimates) ---
+const MAX_PX_PER_SEC = 300; // keep in sync with loop
+const K_EXP = 2.5;          // curve aggressiveness (gentle)
+const BASELINE_PXPS = 12;   // visible baseline when slider > 0
+
+function computePxPerSec(speedValue: number, fine: boolean): number {
+  const normalized = Math.max(0, Math.min(1, speedValue / 10)); // 0..1
+  if (normalized === 0) return 0;
+  const factor = Math.expm1(K_EXP * normalized) / Math.expm1(K_EXP); // 0→1
+  const variable = (MAX_PX_PER_SEC - BASELINE_PXPS) * factor;
+  const pxps = BASELINE_PXPS + variable;
+  return fine ? pxps * 0.5 : pxps;
+}
+
+
 import ReactMarkdown from 'react-markdown';
 import { Globe, Linkedin, Github, Info, Instagram, ArrowLeft, Undo } from 'lucide-react';
 import remarkGfm from 'remark-gfm';
@@ -11,44 +57,70 @@ function Home() {
   const [isRunning, setIsRunning] = useState(false);
   const [displayDarkMode, setDisplayDarkMode] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fineControl, setFineControl] = useState(false);
   const displayRef = useRef<HTMLDivElement>(null);
+  const [layout, setLayout] = useState({ pathPx: 0, wordsPerPixelTotal: 0 });
 
+  const plainText = React.useMemo(() => (isMarkdown ? stripMarkdown(content) : content), [content, isMarkdown]);
+
+  const wordCount = React.useMemo(() => {
+    const text = plainText.trim();
+    if (!text) return 0;
+    const words = text.match(/\b[\w'-]+\b/g);
+    return words ? words.length : 0;
+  }, [plainText]);
+
+  // Unified ETA: based on current speed × length
+  const etaBySpeedSec = React.useMemo(() => {
+    const pxps = computePxPerSec(speed, fineControl);
+    if (pxps <= 0 || layout.wordsPerPixelTotal <= 0 || wordCount === 0) return 0;
+    const wordsPerSecond = pxps * layout.wordsPerPixelTotal;
+    return Math.ceil(wordCount / wordsPerSecond);
+  }, [speed, fineControl, layout.wordsPerPixelTotal, wordCount]);
+
+  // Layout effect: measure scroll path and words-per-pixel-total
+  useEffect(() => {
+    const el = displayRef.current;
+    const measure = () => {
+      if (!el) {
+        setLayout({ pathPx: 0, wordsPerPixelTotal: 0 });
+        return;
+      }
+      const pathPx = Math.max(0, el.scrollHeight - el.clientHeight);
+      const wordsPerPixelTotal = pathPx > 0 && wordCount > 0 ? wordCount / pathPx : 0;
+      setLayout({ pathPx, wordsPerPixelTotal });
+    };
+    measure();
+    setTimeout(measure, 0);
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [content, isMarkdown, fontSize, isFullscreen, displayDarkMode, wordCount]);
+
+  // Animation loop: simple, time-based scroll using current speed
   useEffect(() => {
     let raf = 0;
     let last = 0;
-
     const loop = (t: number) => {
-      if (!displayRef.current || !isRunning) return;
-      if (!last) last = t;
-      const dt = (t - last) / 1000; // seconds since last frame
-      last = t;
-
-      // Nonlinear speed curve: 0–10 slider → 0–300 px/sec with extra precision at the low end
-      const maxPxPerSec = 300;
-      const normalized = speed / 10; // 0..1
-      const pxPerSec = maxPxPerSec * normalized * normalized; // quadratic easing
-
       const el = displayRef.current;
-      const nextScroll = el.scrollTop + pxPerSec * dt;
-      el.scrollTop = nextScroll;
-
-      // Stop at bottom
+      if (!el || !isRunning) return;
+      if (!last) last = t;
+      const dt = (t - last) / 1000;
+      last = t;
+      const pxps = computePxPerSec(speed, fineControl);
+      el.scrollTop = el.scrollTop + pxps * dt;
       if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) {
-        // pause when we hit the bottom
         setIsRunning(false);
         return;
       }
-
       raf = requestAnimationFrame(loop);
     };
-
     if (isRunning) {
       last = performance.now();
       raf = requestAnimationFrame(loop);
     }
-
     return () => cancelAnimationFrame(raf);
-  }, [isRunning, speed]);
+  }, [isRunning, speed, fineControl]);
+
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -103,12 +175,12 @@ function Home() {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mt-6">
         <div className="col-span-full grid grid-cols-1 gap-3">
           <div className="flex flex-col space-y-1">
-            <label className="uppercase text-xs tracking-wide font-bold">Speed: {speed.toFixed(1)}</label>
+            <label className="uppercase text-xs tracking-wide font-bold">Speed: {speed.toFixed(2)}</label>
             <input
               type="range"
               min="0"
               max="10"
-              step="0.1"
+              step="0.01"
               value={speed}
               onChange={(e) => setSpeed(parseFloat(e.target.value))}
               className="w-full bg-white/30 backdrop-blur-md border border-black cursor-pointer"
@@ -125,6 +197,24 @@ function Home() {
               onChange={(e) => setFontSize(Number(e.target.value))}
               className="w-full bg-white/30 backdrop-blur-md border border-black cursor-pointer"
             />
+          </div>
+          <div className="flex items-center space-x-2">
+            <input
+              id="fine-control"
+              type="checkbox"
+              checked={fineControl}
+              onChange={(e) => setFineControl(e.target.checked)}
+              className="h-4 w-4 border border-black cursor-pointer"
+            />
+            <label htmlFor="fine-control" className="uppercase text-xs tracking-wide font-bold select-none">Fine Control (½ speed)</label>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+            <div className="text-sm uppercase tracking-wide font-bold">
+              Words: {wordCount}
+            </div>
+            <div className="text-sm uppercase tracking-wide font-bold">
+              ETA: {formatDuration(etaBySpeedSec)}
+            </div>
           </div>
         </div>
         <button onClick={() => setIsRunning(true)} className="uppercase text-xs tracking-wide border border-black bg-white/30 backdrop-blur-md shadow-sm px-3 py-2 hover:bg-black hover:text-white transition">
@@ -173,12 +263,12 @@ function Home() {
               <button onClick={() => setIsRunning(false)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Pause</button>
               <button onClick={() => (displayRef.current!.scrollTop = 0)} className="text-xs uppercase border px-2 py-1 hover:bg-black hover:text-white transition">Reset</button>
               <div className="flex flex-col space-y-1">
-                <label className="text-xs uppercase tracking-wide font-bold">Speed: {speed.toFixed(1)}</label>
+                <label className="text-xs uppercase tracking-wide font-bold">Speed: {speed.toFixed(2)}</label>
                 <input
                   type="range"
                   min="0"
                   max="10"
-                  step="0.1"
+                  step="0.01"
                   value={speed}
                   onChange={(e) => setSpeed(parseFloat(e.target.value))}
                   className="w-24 bg-white/30 backdrop-blur-md border border-black cursor-pointer"
@@ -195,6 +285,19 @@ function Home() {
                   onChange={(e) => setFontSize(Number(e.target.value))}
                   className="w-24 bg-white/30 backdrop-blur-md border border-black cursor-pointer"
                 />
+              </div>
+              <div className="text-xs uppercase tracking-wide font-bold whitespace-nowrap">
+                ETA: {formatDuration(etaBySpeedSec)}
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  id="fine-control-fs"
+                  type="checkbox"
+                  checked={fineControl}
+                  onChange={(e) => setFineControl(e.target.checked)}
+                  className="h-3.5 w-3.5 border border-black cursor-pointer"
+                />
+                <label htmlFor="fine-control-fs" className="text-xs uppercase tracking-wide font-bold select-none">Fine</label>
               </div>
               <button
                 onClick={() => setDisplayDarkMode(!displayDarkMode)}
